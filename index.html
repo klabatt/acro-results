@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Acro Results">
+<title>KSIS Acro Results 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; color: #1d1d1f; min-height: 100vh; }
+  
+  .header { background: #1F4E79; color: white; padding: 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .header h1 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+  .search-wrap { position: relative; }
+  .search-wrap input { width: 100%; padding: 10px 36px 10px 12px; border-radius: 10px; border: none; font-size: 16px; background: rgba(255,255,255,0.15); color: white; }
+  .search-wrap input::placeholder { color: rgba(255,255,255,0.6); }
+  .search-wrap input:focus { outline: none; background: rgba(255,255,255,0.25); }
+  .search-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); opacity: 0.7; font-size: 18px; }
+
+  .filters { background: white; padding: 10px 12px; display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid #e5e5e7; -webkit-overflow-scrolling: touch; }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-chip { flex-shrink: 0; padding: 6px 12px; border-radius: 20px; border: 1px solid #d1d1d6; background: white; font-size: 13px; color: #1d1d1f; cursor: pointer; white-space: nowrap; appearance: none; -webkit-appearance: none; }
+  .filter-chip:focus { outline: none; border-color: #1F4E79; }
+  .filter-chip.active { background: #1F4E79; color: white; border-color: #1F4E79; }
+
+  .stats-bar { background: white; padding: 8px 12px; font-size: 12px; color: #6e6e73; border-bottom: 1px solid #e5e5e7; display: flex; gap: 16px; }
+  .stats-bar span { color: #1d1d1f; font-weight: 500; }
+
+  .content { padding: 0; }
+
+  /* Mobile: card view */
+  .cards { display: flex; flex-direction: column; gap: 0; }
+  .card { background: white; border-bottom: 1px solid #e5e5e7; padding: 12px 16px; cursor: pointer; transition: background 0.1s; }
+  .card:active { background: #f5f5f7; }
+  .card.acro-explosion { border-left: 3px solid #1F4E79; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .card-athlete { font-weight: 600; font-size: 15px; color: #1d1d1f; flex: 1; margin-right: 8px; }
+  .card-score { font-size: 20px; font-weight: 700; color: #1F4E79; white-space: nowrap; }
+  .card-club { font-size: 13px; color: #6e6e73; margin-bottom: 6px; }
+  .card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #f5f5f7; color: #6e6e73; }
+  .tag.event { background: #e8f0f7; color: #1F4E79; }
+  .tag.place { background: #f5f5f7; color: #1d1d1f; font-weight: 500; }
+  .card-meet { font-size: 12px; color: #aeaeb2; margin-top: 4px; }
+
+  /* Desktop: table view */
+  .table-wrap { display: none; background: white; border-radius: 12px; margin: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { padding: 10px 12px; text-align: left; font-weight: 600; font-size: 11px; color: #6e6e73; background: #f9f9f9; border-bottom: 1px solid #e5e5e7; cursor: pointer; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.3px; }
+  th:hover { color: #1F4E79; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; color: #1d1d1f; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f9f9fb; }
+  .row-acro td { color: #1F4E79; font-weight: 500; }
+  .col-score { text-align: right; font-weight: 700; font-size: 15px; color: #1F4E79; }
+  .col-place { text-align: center; font-weight: 600; color: #6e6e73; }
+
+  .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: white; border-top: 1px solid #e5e5e7; position: sticky; bottom: 0; }
+  .pagination button { padding: 8px 18px; border-radius: 8px; border: 1px solid #d1d1d6; background: white; color: #1F4E79; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .pagination button:disabled { opacity: 0.35; cursor: default; }
+  .pagination .page-info { font-size: 13px; color: #6e6e73; }
+
+  .loading { text-align: center; padding: 60px 20px; color: #6e6e73; }
+  .loading-spinner { width: 32px; height: 32px; border: 3px solid #e5e5e7; border-top-color: #1F4E79; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { text-align: center; padding: 60px 20px; color: #6e6e73; font-size: 15px; }
+  .error { text-align: center; padding: 40px 20px; color: #c0392b; font-size: 14px; line-height: 1.6; }
+
+  @media (min-width: 768px) {
+    .header { padding: 16px 24px; }
+    .header h1 { font-size: 22px; }
+    .search-wrap input { font-size: 15px; }
+    .filters { padding: 12px 24px; gap: 10px; }
+    .stats-bar { padding: 10px 24px; }
+    .cards { display: none; }
+    .table-wrap { display: block; }
+    .pagination { padding: 12px 24px; background: #f9f9f9; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏅 KSIS Acro Results 2026</h1>
+  <div class="search-wrap">
+    <input type="search" id="search" placeholder="Search athlete, club, event or meet..." autocomplete="off" autocorrect="off">
+    <span class="search-icon">🔍</span>
+  </div>
+</div>
+
+<div class="filters" id="filters">
+  <select class="filter-chip" id="f-event" onchange="applyFilters()"><option value="">All events</option></select>
+  <select class="filter-chip" id="f-meet" onchange="applyFilters()"><option value="">All meets</option></select>
+  <select class="filter-chip" id="f-year" onchange="applyFilters()"><option value="">All years</option></select>
+</div>
+
+<div class="stats-bar" id="stats-bar">Loading...</div>
+
+<div class="content">
+  <div class="cards" id="cards">
+    <div class="loading"><div class="loading-spinner"></div>Loading results from Google Sheets...</div>
+  </div>
+
+  <div class="table-wrap" id="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="setSort('meet_name')">Meet</th>
+          <th onclick="setSort('meet_date')">Date</th>
+          <th onclick="setSort('event')">Event</th>
+          <th onclick="setSort('athletes')">Athletes</th>
+          <th onclick="setSort('club')">Club</th>
+          <th onclick="setSort('year_age')">Year</th>
+          <th onclick="setSort('place')" style="text-align:center">Pl</th>
+          <th onclick="setSort('overall')" style="text-align:right">Score</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="pagination" id="pagination" style="display:none">
+  <button onclick="changePage(-1)" id="prev-btn">← Prev</button>
+  <span class="page-info" id="page-info"></span>
+  <button onclick="changePage(1)" id="next-btn">Next →</button>
+</div>
+
+<script>
+const SHEET_ID = '1Taot0TqVxRQPglwoYfsiYmeeDpCukv-phlQCE8L2hZA';
+const API_KEY = 'AIzaSyCbXgB7uMOt5rItNkk5lNeijT0oKO0UZFw';
+const PAGE_SIZE = 50;
+
+let allData = [], filtered = [], sortCol = 'overall', sortDir = -1, page = 0;
+
+async function init() {
+  try {
+    // Get sheet list
+    const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?key=${API_KEY}&fields=sheets.properties`);
+    const meta = await metaRes.json();
+    const sheets = meta.sheets.map(s => s.properties.title).filter(n => !n.endsWith(' All') && n !== 'TEMP_KEEP' && n !== 'TEMP');
+
+    let loaded = 0;
+    const all = [];
+
+    for (const sheet of sheets) {
+      try {
+        const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheet)}?key=${API_KEY}`);
+        const j = await r.json();
+        const rows = j.values || [];
+        if (rows.length < 2) continue;
+        const hdr = rows[0];
+        const idx = k => hdr.findIndex(h => h === k);
+        const mi = idx('Meet Name'), di = idx('Meet Date'), ai = idx('Athletes'),
+              ci = idx('Club'), yi = idx('Year / Age'), pi = idx('Place'), oi = idx('OVERALL');
+
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          const g = k => row[k] !== undefined ? row[k] : '';
+          if (!g(ai)) continue;
+          all.push({
+            event: sheet, meet_name: g(mi), meet_date: g(di),
+            athletes: g(ai), club: g(ci), year_age: g(yi),
+            place: g(pi), overall: parseFloat(g(oi)) || 0
+          });
+        }
+        loaded++;
+        document.getElementById('stats-bar').textContent = `Loading... ${loaded}/${sheets.length} events`;
+      } catch(e) {}
+    }
+
+    allData = all;
+    setupFilters();
+    applyFilters();
+  } catch(e) {
+    document.getElementById('cards').innerHTML = `<div class="error">Could not load data.<br><br>${e.message}<br><br>Make sure the Google Sheet is set to "Anyone with the link can view".</div>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:#c0392b">Could not load data</td></tr>`;
+  }
+}
+
+function setupFilters() {
+  const events = [...new Set(allData.map(r => r.event))].sort();
+  const meets = [...new Set(allData.map(r => r.meet_name))].filter(Boolean).sort();
+  const years = [...new Set(allData.map(r => {
+    const m = String(r.year_age).match(/\d{4}/);
+    return m ? m[0] : '';
+  }))].filter(Boolean).sort().reverse();
+
+  fill('f-event', events, 'All events');
+  fill('f-meet', meets, 'All meets');
+  fill('f-year', years, 'All years');
+}
+
+function fill(id, vals, placeholder) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = `<option value="">${placeholder}</option>` + vals.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+}
+
+function applyFilters() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const ev = document.getElementById('f-event').value;
+  const mt = document.getElementById('f-meet').value;
+  const yr = document.getElementById('f-year').value;
+
+  filtered = allData.filter(r => {
+    if (q && !`${r.athletes} ${r.club} ${r.event} ${r.meet_name}`.toLowerCase().includes(q)) return false;
+    if (ev && r.event !== ev) return false;
+    if (mt && r.meet_name !== mt) return false;
+    if (yr && !String(r.year_age).includes(yr)) return false;
+    return true;
+  });
+
+  filtered.sort((a, b) => {
+    let av = a[sortCol], bv = b[sortCol];
+    if (sortCol === 'overall') { av = parseFloat(av)||0; bv = parseFloat(bv)||0; }
+    else if (sortCol === 'place') { av = parseInt(av)||999; bv = parseInt(bv)||999; }
+    else { av = String(av||'').toLowerCase(); bv = String(bv||'').toLowerCase(); }
+    return av < bv ? -sortDir : av > bv ? sortDir : 0;
+  });
+
+  page = 0;
+  render();
+}
+
+function setSort(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = col === 'overall' ? -1 : 1; }
+  applyFilters();
+}
+
+function render() {
+  const start = page * PAGE_SIZE;
+  const slice = filtered.slice(start, start + PAGE_SIZE);
+  const isDesktop = window.innerWidth >= 768;
+
+  // Stats bar
+  document.getElementById('stats-bar').innerHTML = `${allData.length.toLocaleString()} total results &nbsp;·&nbsp; <span>${filtered.length.toLocaleString()}</span> shown`;
+
+  if (filtered.length === 0) {
+    document.getElementById('cards').innerHTML = '<div class="empty">No results found</div>';
+    document.getElementById('tbody').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#6e6e73">No results found</td></tr>';
+    document.getElementById('pagination').style.display = 'none';
+    return;
+  }
+
+  // Mobile cards
+  document.getElementById('cards').innerHTML = slice.map(r => {
+    const isAE = r.club && r.club.toLowerCase().includes('acro explosion');
+    return `<div class="card${isAE ? ' acro-explosion' : ''}">
+      <div class="card-top">
+        <div class="card-athlete">${esc(r.athletes)}</div>
+        <div class="card-score">${r.overall || '—'}</div>
+      </div>
+      <div class="card-club">${esc(r.club)}</div>
+      <div class="card-tags">
+        <span class="tag event">${esc(r.event)}</span>
+        ${r.place ? `<span class="tag place">${esc(r.place)}</span>` : ''}
+        ${r.year_age ? `<span class="tag">${esc(r.year_age)}</span>` : ''}
+      </div>
+      <div class="card-meet">${esc(r.meet_name)} · ${esc(r.meet_date)}</div>
+    </div>`;
+  }).join('');
+
+  // Desktop table
+  document.getElementById('tbody').innerHTML = slice.map(r => {
+    const isAE = r.club && r.club.toLowerCase().includes('acro explosion');
+    return `<tr class="${isAE ? 'row-acro' : ''}">
+      <td>${esc(r.meet_name)}</td>
+      <td>${esc(r.meet_date)}</td>
+      <td>${esc(r.event)}</td>
+      <td>${esc(r.athletes)}</td>
+      <td>${esc(r.club)}</td>
+      <td>${esc(r.year_age)}</td>
+      <td class="col-place">${esc(r.place)}</td>
+      <td class="col-score">${r.overall || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pag = document.getElementById('pagination');
+  pag.style.display = totalPages > 1 ? 'flex' : 'none';
+  document.getElementById('page-info').textContent = `${page+1} / ${totalPages}`;
+  document.getElementById('prev-btn').disabled = page === 0;
+  document.getElementById('next-btn').disabled = page >= totalPages - 1;
+}
+
+function changePage(dir) {
+  page += dir;
+  render();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('search').addEventListener('input', applyFilters);
+
+init();
+</script>
+</body>
+</html>
