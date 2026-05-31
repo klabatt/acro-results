@@ -305,7 +305,7 @@ function render() {
 
   // Mobile cards
   document.getElementById('cards').innerHTML = slice.map(r => {
-    const ae = r.club && r.club.toLowerCase().includes('acro explosion');
+    const ae = (r.club && r.club.toLowerCase().includes('acro explosion')) || (r.athletes && r.athletes.toLowerCase().includes('acro explosion'));
     // Build score summary for card
     const scoreParts = [];
     if (r['BAL Total']) scoreParts.push(`Bal: <b>${r['BAL Total']}</b> (D:${r['Bal D']} E:${r['Bal E']} A:${r['Bal A']}${r['Bal Ded']&&r['Bal Ded']!=='-'?' Ded:'+r['Bal Ded']:''})`);
@@ -344,7 +344,7 @@ function render() {
 
   // Desktop table rows
   document.getElementById('tbody').innerHTML = slice.map(r => {
-    const ae = r.club && r.club.toLowerCase().includes('acro explosion');
+    const ae = (r.club && r.club.toLowerCase().includes('acro explosion')) || (r.athletes && r.athletes.toLowerCase().includes('acro explosion'));
     return `<tr class="${ae?'ae':''}">
       <td>${esc(r.meet_name)}</td>
       <td>${esc(r.meet_date)}</td>
